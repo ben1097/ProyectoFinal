@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Factura {
-    public static void generarFacturaTemporal(Parqueadero parqueadero, Vehiculo v, int horas, double tarifaPorHora) {
+    public static void generarFacturaTemporal(Parqueadero parqueadero, Vehiculo v, double horas, double tarifaPorHora) {
         LocalDateTime ahora = LocalDateTime.now();
         double monto = v.pagarPorHora(horas, tarifaPorHora);
 
