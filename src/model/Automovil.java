@@ -5,7 +5,7 @@ public class Automovil extends Vehiculo {
         super (placa, color, modelo);
     }
     @Override
-    public double pagarPorHora(int horas, double tarifa) {
+    public double pagarPorHora(double horas, double tarifa) {
         return horas * tarifa;
     }
 
