@@ -1,6 +1,7 @@
 package model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Representa una membresía adquirida por un cliente para un vehículo específico.
@@ -12,17 +13,20 @@ public class Membresia {
     private LocalDate fechaFin;
     private double monto;
 
-    public Membresia(Vehiculo vehiculo, Cliente cliente, int meses, double montoMensual) {
-        this.vehiculo = vehiculo;
+    public Membresia(Cliente cliente, Vehiculo vehiculo, LocalDateTime inicio, LocalDateTime fin, double monto) {
         this.cliente = cliente;
-        this.fechaInicio = LocalDate.now();
-        this.fechaFin = fechaInicio.plusMonths(meses);
-        this.monto = meses * montoMensual;
+        this.vehiculo = vehiculo;
+        this.fechaInicio = inicio.toLocalDate();
+        this.fechaFin = fin.toLocalDate();
+        this.monto = monto;
     }
+
+    
+
     // Verifica si la membresía está activa actualmente.
 // Es decir, si la fecha actual está dentro del período de vigencia.
 
-    public boolean estaActiva() {
+	public boolean estaActiva() {
         return LocalDate.now().isBefore(fechaFin);
     }
 
