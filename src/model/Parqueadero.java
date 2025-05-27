@@ -3,69 +3,54 @@ package model;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 public class Parqueadero {
     private List<Cliente> clientes = new ArrayList<>();
     private List<Pago> pagos = new ArrayList<>();
+    private List<Membresia> membresias = new ArrayList<>();
+    private List<Vehiculo> vehiculos = new ArrayList<>();
+
     private int espaciosMoto;
     private int espaciosAuto;
     private int espaciosCamion;
     private double tarifaMoto;
     private double tarifaAuto;
     private double tarifaCamion;
-    private int CapacidadMaxima;
-    public ArrayList<Vehiculo> vehiculos;
 
-
+    private double ingresosTotales;
     private String nombre = "Parqueadero sas";
     private String direccion = "Calle 123 #45-67";
     private String telefono = "3100000000";
 
+    public Parqueadero() {}
+
+    public Parqueadero(int espaciosMoto, int espaciosAuto, int espaciosCamion,
+                       double tarifaMoto, double tarifaAuto, double tarifaCamion) {
+        this.espaciosMoto = espaciosMoto;
+        this.espaciosAuto = espaciosAuto;
+        this.espaciosCamion = espaciosCamion;
+        this.tarifaMoto = tarifaMoto;
+        this.tarifaAuto = tarifaAuto;
+        this.tarifaCamion = tarifaCamion;
+    }
+
+    public List<Vehiculo> getVehiculos() {
+        return new ArrayList<>(vehiculos);
+    }
+
     public String getDatosParqueadero() {
         return nombre + "\nDirección: " + direccion + "\nTeléfono: " + telefono;
     }
-    // Busca y devuelve la membresía asociada a un vehículo, si existe
-    public Membresia getMembresiaDeVehiculo(Vehiculo vehiculo) {
+
+    public Membresia getMembresiaDeVehiculo(Vehiculo v) {
         for (Membresia m : membresias) {
-            if (m.getVehiculo().equals(vehiculo)) {
+            if (m.getVehiculo() != null && m.getVehiculo().equals(v)) {
                 return m;
             }
         }
         return null;
-    }
-
-    // Muestra todos los vehículos de un cliente y si tienen membresía activa o vencida
-    public void mostrarHistorialVehiculosCliente(String cedulaCliente) {
-        Cliente cliente = buscarClientePorCedula(cedulaCliente);
-        if (cliente == null) {
-            System.out.println("Cliente no encontrado.");
-            return;
-        }
-
-        System.out.println("=== Vehículos del cliente: " + cliente.getNombre() + " ===");
-
-        if (cliente.getVehiculos().isEmpty()) {
-            System.out.println("Este cliente no tiene vehículos registrados.");
-            return;
-        }
-
-        for (Vehiculo v : cliente.getVehiculos()) {
-            System.out.print("Placa: " + v.getPlaca() + " | Tipo: " + v.getClass().getSimpleName() +
-                    " | Color: " + v.getColor() + " | Modelo: " + v.getModelo());
-
-            // Verificar si tiene membresía activa o vencida
-            Membresia m = getMembresiaDeVehiculo(v);
-            if (m != null) {
-                if (m.estaActiva()) {
-                    System.out.println(" | Membresía: ACTIVA (hasta " + m.getFechaFin() + ")");
-                } else {
-                    System.out.println(" | Membresía: VENCIDA (venció el " + m.getFechaFin() + ")");
-                }
-            } else {
-                System.out.println(" | Sin membresía.");
-            }
-        }
     }
 
     public boolean actualizarCliente(String cedula, String nuevoNombre, String nuevoTelefono, String nuevoCorreo) {
@@ -78,7 +63,6 @@ public class Parqueadero {
         }
         return false;
     }
-
 
     public boolean actualizarVehiculo(String placa, String nuevoColor, int nuevoModelo) {
         for (Cliente cliente : clientes) {
@@ -93,42 +77,256 @@ public class Parqueadero {
         return false;
     }
 
-
-
-    private Parqueadero(int capacidadMaxima) {
-        this.CapacidadMaxima = capacidadMaxima;
-        this.vehiculos = new ArrayList<>();
-    }
-    public Parqueadero() {
-        this.vehiculos = new ArrayList<>();
-    }
-
-    private List<Membresia> membresias = new ArrayList<>();
-
-    public Parqueadero(int espaciosMoto, int espaciosAuto, int espaciosCamion,
-                       double tarifaMoto, double tarifaAuto, double tarifaCamion) {
-        this.espaciosMoto = espaciosMoto;
-        this.espaciosAuto = espaciosAuto;
-        this.espaciosCamion = espaciosCamion;
-        this.tarifaMoto = tarifaMoto;
-        this.tarifaAuto = tarifaAuto;
-        this.tarifaCamion = tarifaCamion;
-        this.vehiculos = new ArrayList<>();
-    }
-
-    // metodos
-
-    // Agrega un cliente nuevo a la lista.
-// No se hace validación de duplicados aún.
     public void agregarCliente(Cliente cliente) {
-        clientes.add(cliente);
+        if (buscarClientePorCedula(cliente.getCedula()) == null) {
+            clientes.add(cliente);
+        } else {
+            System.out.println("El cliente ya existe con esa cédula.");
+        }
+    }
+
+    public Cliente buscarClientePorCedula(String cedula) {
+        for (Cliente c : clientes) {
+            if (c.getCedula().equalsIgnoreCase(cedula)) return c;
+        }
+        return null;
+    }
+    public List<Cliente> buscarClientesPorNombre(String nombre) {
+        List<Cliente> encontrados = new ArrayList<>();
+        for (Cliente c : clientes) {
+            if (c.getNombre().equalsIgnoreCase(nombre)) {
+                encontrados.add(c);
+            }
+        }
+        return encontrados;
+    }
+    public Cliente buscarClientePorTelefono(String telefono) {
+        for (Cliente c : clientes) {
+            if (c.getTelefono().equalsIgnoreCase(telefono)) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+
+    public boolean eliminarCliente(String cedula) {
+        // Buscar el cliente por cédula
+        Cliente clienteAEliminar = buscarClientePorCedula(cedula);
+        if (clienteAEliminar == null) {
+            return false;
+        }
+
+        for (Vehiculo v : clienteAEliminar.getVehiculos()) {
+          if (getVehiculos().contains(v)) {
+                System.out.println("No se puede eliminar el cliente porque tiene vehículos dentro del parqueadero.");
+                return false;
+            }
+        }
+
+
+        return clientes.remove(clienteAEliminar);
+    }
+    public void mostrarCliente(String cedula) {
+        Cliente c = buscarClientePorCedula(cedula);
+        if (c == null) {
+            System.out.println("Cliente no encontrado.");
+            return;
+        }
+        System.out.println("Nombre: " + c.getNombre());
+        System.out.println("Cédula: " + c.getCedula());
+        System.out.println("Teléfono: " + c.getTelefono());
+        System.out.println("Correo: " + c.getCorreo());
+        System.out.println("Vehículos registrados:");
+        for (Vehiculo v : c.getVehiculos()) {
+            System.out.println("  - " + v.getClass().getSimpleName() + " | Placa: " + v.getPlaca() + " | Modelo: " + v.getModelo() + " | Color: " + v.getColor());
+        }
+    }
+
+    public void mostrarTodosLosClientes() {
+        if (clientes.isEmpty()) {
+            System.out.println("No hay clientes registrados.");
+            return;
+        }
+
+        for (Cliente c : clientes) {
+            System.out.println("-------------------------------------------------");
+            System.out.println("Nombre: " + c.getNombre());
+            System.out.println("Cédula: " + c.getCedula());
+            System.out.println("Teléfono: " + c.getTelefono());
+            System.out.println("Correo: " + c.getCorreo());
+            System.out.println("Vehículos registrados:");
+            if (c.getVehiculos().isEmpty()) {
+                System.out.println("  (No tiene vehículos registrados)");
+            } else {
+                for (Vehiculo v : c.getVehiculos()) {
+                    System.out.println("  - " + v.getClass().getSimpleName() + " | Placa: " + v.getPlaca() + " | Modelo: " + v.getModelo() + " | Color: " + v.getColor());
+                }
+            }
+        }
+        System.out.println("-------------------------------------------------");
+    }
+
+
+    public boolean registrarVehiculo(String cedulaCliente, Vehiculo vehiculo) {
+        Cliente cliente = buscarClientePorCedula(cedulaCliente);
+        if (cliente != null) {
+            cliente.agregarVehiculo(vehiculo);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean ingresarVehiculoTemporal(Vehiculo vehiculo) {
+        if (espacioDisponible(vehiculo) && !vehiculos.contains(vehiculo)) {
+            vehiculos.add(vehiculo);
+            reducirEspacio(vehiculo);
+            return true;
+        }
+        return false;
+    }
+    public Vehiculo buscarVehiculoPorPlaca(String placa) {
+        for (Cliente c : clientes) {
+            for (Vehiculo v : c.getVehiculos()) {
+                if (v.getPlaca().equalsIgnoreCase(placa)) {
+                    return v;
+                }
+            }
+        }
+        return null;
+    }
+
+    public void mostrarTodosLosVehiculosRegistrados() {
+        boolean hayVehiculos = false;
+        for (Cliente c : clientes) {
+            for (Vehiculo v : c.getVehiculos()) {
+                if (!hayVehiculos) {
+                    System.out.println("==== Vehículos registrados ====");
+                    hayVehiculos = true;
+                }
+                System.out.println("Placa: " + v.getPlaca() + " | Modelo: " + v.getModelo() +
+                                   " | Color: " + v.getColor() + " | Tipo: " + v.getClass().getSimpleName() +
+                                   " | Propietario: " + c.getNombre() + " (" + c.getCedula() + ")");
+            }
+        }
+        if (!hayVehiculos) {
+            System.out.println("No hay vehículos registrados.");
+        }
+    }
+
+    public boolean espacioDisponible(Vehiculo v) {
+        if (v instanceof Moto) return espaciosMoto > 0;
+        if (v instanceof Automovil || v instanceof VehiculoTemporal) return espaciosAuto > 0;
+        if (v instanceof Camion) return espaciosCamion > 0;
+        return false;
+    }
+
+    public void reducirEspacio(Vehiculo v) {
+        if (v instanceof Moto) espaciosMoto--;
+        else if (v instanceof Automovil || v instanceof VehiculoTemporal) espaciosAuto--;
+        else if (v instanceof Camion) espaciosCamion--;
+    }
+
+    public void liberarEspacio(Vehiculo v) {
+        if (v instanceof Moto) espaciosMoto++;
+        else if (v instanceof Automovil || v instanceof VehiculoTemporal) espaciosAuto++;
+        else if (v instanceof Camion) espaciosCamion++;
+    }
+
+    public double registrarSalida(Vehiculo vehiculo, double horas) {
+        double tarifa = obtenerTarifa(vehiculo);
+        double monto = vehiculo.pagarPorHora(horas, tarifa);
+        pagos.add(new Pago(vehiculo, monto, "Temporal"));
+        liberarEspacio(vehiculo);
+        vehiculos.remove(vehiculo);
+        return monto;
+    }
+
+    public double obtenerTarifa(Vehiculo v) {
+        if (v instanceof Moto || v instanceof VehiculoTemporal) return tarifaMoto;
+        if (v instanceof Automovil) return tarifaAuto;
+        if (v instanceof Camion) return tarifaCamion;
+        return 0;
+    }
+
+    public boolean registrarMembresia(Vehiculo v, Cliente c, int opcion) {
+        int meses;
+        double precio;
+
+        switch (opcion) {
+            case 1: meses = 1; precio = 10000; break;
+            case 2: meses = 3; precio = 27000; break;
+            case 3: meses = 6; precio = 50000; break;
+            default:
+                System.out.println("Opción inválida para membresía.");
+                return false;
+        }
+
+        if (v == null || c == null) {
+            System.out.println("Vehículo o cliente no pueden ser nulos.");
+            return false;
+        }
+
+        if (!espacioDisponible(v)) {
+            System.out.println("No hay espacio disponible para este tipo de vehículo.");
+            return false;
+        }
+
+        LocalDateTime inicio = LocalDateTime.now();
+        LocalDateTime fin = inicio.plusMonths(meses);
+        Membresia m = new Membresia(c, v, inicio, fin, precio);
+        membresias.add(m);
+        pagos.add(new Pago(v, precio, "Membresia"));
+        reducirEspacio(v);
+        ingresosTotales += precio;
+        return true;
+    }
+
+
+
+    public void mostrarClientes() {
+        if (clientes.isEmpty()) {
+            System.out.println("No hay clientes registrados.");
+            return;
+        }
+        System.out.println("=== LISTA DE CLIENTES ===");
+        for (Cliente c : clientes) {
+            System.out.println("Nombre: " + c.getNombre() + ", Cédula: " + c.getCedula() +
+                               ", Tel: " + c.getTelefono() + ", Correo: " + c.getCorreo());
+        }
+    }
+
+    public void mostrarVehiculosRegistrados() {
+        if (vehiculos.isEmpty()) {
+            System.out.println("No hay vehículos registrados.");
+            return;
+        }
+        System.out.println("=== VEHÍCULOS REGISTRADOS ===");
+        for (Vehiculo v : vehiculos) {
+            System.out.println(v.getClass().getSimpleName() + " - Placa: " + v.getPlaca() +
+                               ", Color: " + v.getColor() + ", Modelo: " + v.getModelo() +
+                               ", Propietario: " + (v.getPropietario() != null ? v.getPropietario().getNombre() : "Temporal"));
+        }
+    }
+
+    public void mostrarVehiculosEnParqueadero() {
+        System.out.println("=== Vehículos actualmente en el parqueadero ===");
+        if (vehiculos.isEmpty()) {
+            System.out.println("No hay vehículos registrados en este momento.");
+            return;
+        }
+
+        for (Vehiculo v : vehiculos) {
+            String tipo = v.getClass().getSimpleName();
+            String propietario = (v.getPropietario() != null) ? v.getPropietario().getNombre() : "Temporal";
+            System.out.println("Tipo: " + tipo + " | Placa: " + v.getPlaca() + " | Color: " + v.getColor() +
+                               " | Modelo: " + v.getModelo() + " | Propietario: " + propietario);
+        }
     }
 
     public void mostrarClientesConMembresiasActivas() {
         System.out.println("=== Clientes con membresías activas o próximas a vencer ===");
-
         boolean alguno = false;
-
         for (Membresia m : membresias) {
             if (m.estaActiva()) {
                 Cliente cliente = m.getCliente();
@@ -145,27 +343,22 @@ public class Parqueadero {
                 } else {
                     System.out.println(" --> Vigente hasta " + fin);
                 }
-
                 alguno = true;
             }
         }
-
         if (!alguno) {
             System.out.println("No hay clientes con membresías activas.");
         }
     }
 
-
-
-    //Calcula y muestra el total de ingresos separados por tipo de pago: membresias y pago temporales
     public void mostrarReporteIngresosPorTipo() {
         double totalMembresias = 0;
         double totalTemporales = 0;
 
         for (Pago p : pagos) {
-            if (p.getTipoPago().equalsIgnoreCase("Membresia")) {
+            if ("Membresia".equalsIgnoreCase(p.getTipoPago())) {
                 totalMembresias += p.getMonto();
-            } else if (p.getTipoPago().equalsIgnoreCase("Temporal")) {
+            } else if ("Temporal".equalsIgnoreCase(p.getTipoPago())) {
                 totalTemporales += p.getMonto();
             }
         }
@@ -176,80 +369,6 @@ public class Parqueadero {
         System.out.println("Total general: $" + (totalMembresias + totalTemporales));
     }
 
-
-    // Busca un cliente por su cédula.
-    // Si lo encuentra, lo retorna; si no, devuelve null.
-    public Cliente buscarClientePorCedula(String cedula) {
-        for (Cliente c : clientes) {
-            if (c.getCedula().equals(cedula)) return c;
-        }
-        return null;
-    }
-    // Intenta asociar un vehículo a un cliente existente.
-    // Retorna true si el cliente existe y se agrega el vehículo.
-    public boolean registrarVehiculo(String cedulaCliente, Vehiculo vehiculo) {
-        Cliente cliente = buscarClientePorCedula(cedulaCliente);
-        if (cliente != null) {
-            cliente.agregarVehiculo(vehiculo);
-            return true;
-        }
-        return false;
-    }
-
-    // Permite el ingreso temporal de un vehículo al parqueadero.
-    // Solo se admite si hay espacio disponible según el tipo.
-    public boolean ingresarVehiculoTemporal(Vehiculo vehiculo) {
-        if (espacioDisponible(vehiculo) && !vehiculos.contains(vehiculo)) {
-            vehiculos.add(vehiculo);
-            reducirEspacio(vehiculo);
-            return true;
-        }
-        return false;
-    }
-
-
-    // Verifica si hay espacio libre para el tipo de vehículo que se quiere ingresar.
-    public boolean espacioDisponible(Vehiculo v) {
-        if (v instanceof Moto) return espaciosMoto > 0;
-        if (v instanceof Automovil || v instanceof VehiculoTemporal) return espaciosAuto > 0;
-        if (v instanceof Camion) return espaciosCamion > 0;
-        return false;
-    }
-
-    // Resta un espacio disponible según el tipo de vehículo que ingresó.
-    public void reducirEspacio(Vehiculo v) {
-        if (v instanceof Moto) espaciosMoto--;
-        if (v instanceof Automovil || v instanceof VehiculoTemporal) espaciosAuto--;
-        if (v instanceof Camion) espaciosCamion--;
-    }
-
-    // Cuando un vehículo sale, se calcula lo que debe pagar, se registra el pago y se libera el espacio.
-    public double registrarSalida(Vehiculo vehiculo, double horas) {
-        double tarifa = obtenerTarifa(vehiculo);
-        double monto = vehiculo.pagarPorHora(horas, tarifa);
-        pagos.add(new Pago(vehiculo, monto, "Temporal"));
-        liberarEspacio(vehiculo);
-        vehiculos.remove(vehiculo);
-        return monto;
-    }
-
-    // Retorna la tarifa por hora según el tipo de vehículo.
-    public double obtenerTarifa(Vehiculo v) {
-        if (v instanceof Moto || v instanceof VehiculoTemporal) return tarifaMoto;
-        if (v instanceof Automovil) return tarifaAuto;
-        if (v instanceof Camion) return tarifaCamion;
-        return 0;
-    }
-
-
-    // Suma un espacio libre cuando un vehículo se retira del parqueadero.
-    public void liberarEspacio(Vehiculo v) {
-        if (v instanceof Moto) espaciosMoto++;
-        if (v instanceof Automovil || v instanceof VehiculoTemporal) espaciosAuto++;
-        if (v instanceof Camion) espaciosCamion++;
-    }
-
-    // Calcula cuánto dinero ha recaudado el parqueadero en total, sumando todos los pagos registrados.
     public double calcularTotalIngresos() {
         double total = 0;
         for (Pago p : pagos) {
@@ -257,48 +376,34 @@ public class Parqueadero {
         }
         return total;
     }
-    // Registra una membresía para un cliente y su vehículo si hay espacio.
-// Calcula el monto total, descuenta el espacio y guarda el pago.
 
-    public boolean registrarMembresia(Vehiculo vehiculo, Cliente cliente, int meses) {
-        if (!espacioDisponible(vehiculo)) return false;
-
-        double tarifaMensual = obtenerTarifa(vehiculo);
-        Membresia m = new Membresia(vehiculo, cliente, meses, tarifaMensual);
-        membresias.add(m);
-        reducirEspacio(vehiculo);
-        pagos.add(new Pago(vehiculo, m.getMonto(), "Membresia"));
-        return true;
-    }
-    public boolean tieneMembresiaActiva(Vehiculo vehiculo) {
-        for (Membresia m : membresias) {
-            if (m.getVehiculo().equals(vehiculo) && m.estaActiva()) {
-                return true;
-            }
-        }
-        return false;
-
-
+    public String generarFacturaTemporalTexto(Vehiculo vSalida, double horas) {
+        double tarifa = obtenerTarifa(vSalida);
+        double monto = vSalida.pagarPorHora(horas, tarifa);
+        return "Factura Temporal\n" +
+               "Vehículo: " + vSalida.getPlaca() + "\n" +
+               "Horas: " + horas + "\n" +
+               "Monto a pagar: $" + monto;
     }
 
-    // Muestra la lista de vehículos actualmente dentro del parqueadero.
-    public void mostrarVehiculosEnParqueadero() {
-        System.out.println("=== Vehículos actualmente en el parqueadero ===");
-
-        if (vehiculos.isEmpty()) {
-            System.out.println("No hay vehículos registrados en este momento.");
+    public void mostrarHistorialVehiculosCliente(String cedula) {
+        Cliente cliente = buscarClientePorCedula(cedula);
+        if (cliente == null) {
+            System.out.println("Cliente no encontrado.");
             return;
         }
 
-        for (Vehiculo v : vehiculos) {
-            String tipo = v.getClass().getSimpleName();
-            String propietario = (v.getPropietario() != null) ? v.getPropietario().getNombre() : "Temporal";
-            System.out.println("Tipo: " + tipo +
-                    " | Placa: " + v.getPlaca() +
-                    " | Color: " + v.getColor() +
-                    " | Modelo: " + v.getModelo() +
-                    " | Propietario: " + propietario);
+        List<Vehiculo> vehiculos = cliente.getVehiculos();
+        if (vehiculos == null || vehiculos.isEmpty()) {
+            System.out.println("Este cliente no ha registrado vehículos.");
+        } else {
+            System.out.println("Vehículos registrados por el cliente:");
+            for (Vehiculo v : vehiculos) {
+                System.out.println("- " + v.getClass().getSimpleName() +
+                                   ", Placa: " + v.getPlaca() +
+                                   ", Modelo: " + v.getModelo() +
+                                   ", Color: " + v.getColor());
+            }
         }
     }
-
 }
